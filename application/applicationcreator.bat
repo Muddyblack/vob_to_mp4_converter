@@ -1,0 +1,1 @@
+pyinstaller --onefile --icon="%~dp0..\VOBConverter.ico" "%~dp0..\VOBConverter.py"

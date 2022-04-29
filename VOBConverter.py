@@ -1,0 +1,217 @@
+import subprocess, sys, os
+
+#replace text in file
+# how to use : file_text_replace(path_of_file, [stringtext], [inline_as_integer_number])
+def file_text_replace(file, change_input, line):
+    change_input_length = len(change_input)
+    input_pointer = 0
+    
+
+    with open(file, 'r',encoding="utf8") as file_to_replace:  #sys.argv[0]
+        data = file_to_replace.readlines()
+    while input_pointer < change_input_length:
+        line[input_pointer] = line[input_pointer] - 1
+        data[line[input_pointer]] = change_input[input_pointer]+'\n'
+        input_pointer += 1
+
+    with open(file, 'w',encoding="utf8") as file_to_replace:
+        file_to_replace.writelines(data)
+
+def read_log(log_path):
+    f = open(log_path, "r")
+
+    log_lines = f.readlines()
+    log_lines_length = len(log_lines)
+    r = 0 
+    while r < log_lines_length:
+        log_lines[r]= log_lines[r].replace('\n','')
+        r+=1
+    f.close()
+
+    return(log_lines)
+
+# ask user for the path where to convert the Videos
+def pathgetter():
+    global path
+    command_list = ['-options', '-help', '-exit']
+    suboptions_list=  ['-disable nvidia', '-enable nvidia', '-set_v_format', '-copy_audio', '-encode_audio']
+
+    path = str(input(" Enter the full Path!\n  >>"))
+
+    #If it is no absolute path #and no option --> then ask until it is
+    while(os.path.isabs(path) == False and str(path) not in command_list):
+        path = str(input("--------------------------\nno absolute Path try again\n--------------------------\n EXAMPLE: F:\TEST\Videos\DV YEARXYZ \n  >>"))
+    
+    #options
+    if(path == command_list[0]):
+        global ffmpeg_extra_p1, ffmpeg_extra_p2, ffmpeg_audio_coding
+        global video_extension
+
+        option = str(input("  enter the option-command\n   >>"))
+        while(option != suboptions_list):
+            if(option == '-continue'):
+                starter()
+            else :
+                print("  -----------------------------------------------------\n  no such command: " + option +"\n  Enter correct command or '-continue' to continue\n  -----------------------------------------------------")
+                option = str(input("  enter the option-command\n   >>"))
+        if(option == suboptions_list[0]): #-disable nvidia
+            ffmpeg_extra_p1 = ''
+            ffmpeg_extra_p2 = '-c:v libx264 -vf yadif=1 '
+            file_text_replace(options_log_path, [ffmpeg_extra_p1,ffmpeg_extra_p2] , [1,2])
+
+        elif(option == suboptions_list[1]): #-enable nvidia
+            ffmpeg_extra_p1 = ' -hwaccel cuda -hwaccel_device 0 -hwaccel_output_format cuda'
+            ffmpeg_extra_p2 = '-c:v h264_nvenc -vf yadif_cuda=1 '
+            file_text_replace(options_log_path, [ffmpeg_extra_p1,ffmpeg_extra_p2] , [1,2])
+        
+        elif(option == suboptions_list[2]): #set-v-format
+            video_extension = str(input(" Enter the desired format:\n NOT YET FINISHED OPTION\n  >>"))
+            file_text_replace(options_log_path, [video_extension] , [3])
+        
+        elif(option == suboptions_list[3]): #-copy_audio
+            ffmpeg_audio_coding = '-c:a copy'
+            file_text_replace(options_log_path, [ffmpeg_audio_coding] , [4])
+        
+        elif(option == suboptions_list[4]): #-encode_audio
+            ffmpeg_audio_coding = '-c:a aac'
+            file_text_replace(options_log_path, [ffmpeg_audio_coding] , [4])
+
+
+        print("  -------------------------------------------------\n  changed: "+option+"\n  -------------------------------------------------")
+        starter()
+    elif(path == command_list[1]): #-help
+        helplist = ""
+        helplist_suboptions = ""
+        for i in range(len(command_list)): 
+            helplist += "   "+command_list[i] + "\n"
+        for i in range(len(suboptions_list)): 
+            helplist_suboptions += "   "+suboptions_list[i] + "\n"
+
+
+        print("------------\nMain commands\n------------\n" + helplist)
+        print("-----------------\ncommands for -options\n-----------------\n" + helplist_suboptions)
+        starter()
+    elif(path == command_list[2]):
+        sys.exit()
+
+#get folder content
+def write_ffmpeg_code(index, content_list):
+    #put the ffmpeg code together
+    ffmpeg_code = '"'+current_absolute_script_path+'"'+ffmpeg_extra_p1+' -i "concat:'  #
+    for i in range(len(content_list)):
+       ffmpeg_code += content_list[i] + "|"
+       if i == len(content_list)-1:
+           ffmpeg_code = ffmpeg_code[:-1]
+    
+    base_name = os.path.basename(os.path.normpath(path)).replace(" ", "_")
+    ffmpeg_code += '" '+ffmpeg_audio_coding+' '+ffmpeg_extra_p2+''+ base_name + "_part_" + str(index+1) + video_extension  #-c:a copy
+    #end
+    return(ffmpeg_code)
+
+def get_code_list():
+    #dec
+    content_list = []
+    vid_parts_list = []
+
+    #get folders content
+    for file in os.listdir(path):
+        if file.endswith(".VOB"):
+            if "VIDEO_TS.VOB" not in file:
+                content_list.append(file)   #absolute path: os.path.join(path, file)
+
+    #get number of different video parts
+    for i in range(len(content_list)):
+        vid_parts_list.append(content_list[i][:-5])
+    vid_parts_list = sorted(set(vid_parts_list), key=vid_parts_list.index)
+    vid_parts_number = len(vid_parts_list)
+
+    #get different codes
+    code_list = []
+
+    for i in range(vid_parts_number):
+        part_list = [j for j in content_list if vid_parts_list[i] in j]
+
+        code_list.append(write_ffmpeg_code(i, part_list))
+
+    return(code_list)
+
+def start_process(code_list):
+    os.chdir(path)
+
+    for i in range(len(code_list)):
+        subprocess.call(code_list[i]) #, creationflags=subprocess.CREATE_NEW_CONSOLE
+        #'ffmpeg -i "concat:VTS_01_1.VOB|VTS_01_2.VOB|VTS_01_3.VOB" -c:v h264_nvenc -vf yadif=1 output.mp4'
+
+    print('finished')
+
+#ffmpeg standard code
+#ffmpeg -i "concat:VTS_01_1.VOB|VTS_01_2.VOB|VTS_01_3.VOB" -c:v libx264 -vf yadif=1 new-video-h265.mp4 #software encoding
+#ffmpeg -i "concat:VTS_01_1.VOB|VTS_01_2.VOB|VTS_01_3.VOB" -c:v h264_nvenc -vf yadif=1 new-video-h265B.mp4  #nividia gpu encoding
+
+#start CORE
+#set terminal presets
+os.system('color 9') 
+#standard vars && create standard log if not existing
+options_log_path = ".\\options.log"
+
+try:
+    f = open(options_log_path)
+    # Do something with the file
+except IOError:
+    print("creating new standard log")
+    f = open(options_log_path, 'w')
+    f.write(" -hwaccel cuda -hwaccel_device 0 -hwaccel_output_format cuda\n"+
+            "-c:v h264_nvenc -vf yadif_cuda=1 \n"+
+            ".mp4\n"+
+            "-c:a copy")
+finally:
+    f.close()
+
+log_list = read_log(options_log_path)
+ffmpeg_extra_p1 = log_list[0]
+ffmpeg_extra_p2 = log_list[1]
+video_extension = log_list[2]
+ffmpeg_audio_coding = log_list[3]
+#logsave
+"""
+ -hwaccel cuda -hwaccel_device 0 -hwaccel_output_format cuda
+-c:v h264_nvenc -vf yadif_cuda=1 
+.mp4
+-c:a copy
+"""
+
+print(log_list)
+#get absolute path of .exe or .py
+if getattr(sys, 'frozen', False):
+    application_path = os.path.dirname(sys.executable) #.exe
+elif __file__:
+    application_path = os.path.dirname(__file__) #.py/.pyw
+
+#set path where to find app ffmpeg
+current_absolute_script_path = str(application_path).replace('\\', '\\\\') + "\\ffmpeg\\ffmpeg.exe"
+#check if app ffmpeg exists else try to use environment variables
+if(os.path.isfile(current_absolute_script_path)==False):
+    current_absolute_script_path = str("ffmpeg")
+
+print("\n Using:",current_absolute_script_path,"\n\n Now starting converting")
+
+#loop the script
+def starter():
+    try:
+        pathgetter()
+        code_list = get_code_list()
+        #if no VOB in folder ask again
+        while(len(code_list) == 0):
+            print("----------------------------\nERROR NO VOB FILES IN FOLDER \n----------------------------")
+            pathgetter()
+            code_list = get_code_list()
+        print(code_list)
+        start_process(code_list)
+        starter()
+    except Exception as e:
+        print("--------------------------------------------------------------------------------------------\nError Message:")
+        print(e)
+        print("\nClose the window and fix the code!\n--------------------------------------------------------------------------------------------\n")
+        starter()
+
+starter()
