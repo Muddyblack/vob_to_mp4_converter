@@ -32,9 +32,10 @@ def read_log(log_path):
 
 # ask user for the path where to convert the Videos
 def pathgetter():
-    global path
+    global path, one_file
+
     command_list = ['-options', '-help', '-exit']
-    suboptions_list=  ['-disable nvidia', '-enable nvidia', '-set_v_format', '-copy_audio', '-encode_audio']
+    suboptions_list=  ['-disable_nvidia', '-enable_nvidia', '-set_v_format', '-copy_audio', '-encode_audio']
 
     path = str(input(" Enter the full Path!\n  >>"))
 
@@ -42,24 +43,29 @@ def pathgetter():
     while(os.path.isabs(path) == False and str(path) not in command_list):
         path = str(input("--------------------------\nno absolute Path try again\n--------------------------\n EXAMPLE: F:\TEST\Videos\DV YEARXYZ \n  >>"))
     
+    if os.path.isdir(path):
+        one_file = False
+    else:
+        one_file = True
+    
     #options
-    if(path == command_list[0]):
+    if(path == command_list[0]): #-options
         global ffmpeg_extra_p1, ffmpeg_extra_p2, ffmpeg_audio_coding
         global video_extension
 
         option = str(input("  enter the option-command\n   >>"))
-        while(option != suboptions_list):
+        while(option not in suboptions_list):
             if(option == '-continue'):
                 starter()
             else :
                 print("  -----------------------------------------------------\n  no such command: " + option +"\n  Enter correct command or '-continue' to continue\n  -----------------------------------------------------")
                 option = str(input("  enter the option-command\n   >>"))
-        if(option == suboptions_list[0]): #-disable nvidia
+        if(option == suboptions_list[0]): #-disable_nvidia
             ffmpeg_extra_p1 = ''
             ffmpeg_extra_p2 = '-c:v libx264 -vf yadif=1 '
             file_text_replace(options_log_path, [ffmpeg_extra_p1,ffmpeg_extra_p2] , [1,2])
 
-        elif(option == suboptions_list[1]): #-enable nvidia
+        elif(option == suboptions_list[1]): #-enable_nvidia
             ffmpeg_extra_p1 = ' -hwaccel cuda -hwaccel_device 0 -hwaccel_output_format cuda'
             ffmpeg_extra_p2 = '-c:v h264_nvenc -vf yadif_cuda=1 '
             file_text_replace(options_log_path, [ffmpeg_extra_p1,ffmpeg_extra_p2] , [1,2])
@@ -91,11 +97,16 @@ def pathgetter():
         print("------------\nMain commands\n------------\n" + helplist)
         print("-----------------\ncommands for -options\n-----------------\n" + helplist_suboptions)
         starter()
-    elif(path == command_list[2]):
+    elif(path == command_list[2]): #-exit
         sys.exit()
 
 #get folder content
 def write_ffmpeg_code(index, content_list):
+    if index == None :
+        index = ""
+    else:
+        index = "_part_" + str(index+1)
+
     #put the ffmpeg code together
     ffmpeg_code = '"'+current_absolute_script_path+'"'+ffmpeg_extra_p1+' -i "concat:'  #
     for i in range(len(content_list)):
@@ -104,9 +115,18 @@ def write_ffmpeg_code(index, content_list):
            ffmpeg_code = ffmpeg_code[:-1]
     
     base_name = os.path.basename(os.path.normpath(path)).replace(" ", "_")
-    ffmpeg_code += '" '+ffmpeg_audio_coding+' '+ffmpeg_extra_p2+''+ base_name + "_part_" + str(index+1) + video_extension  #-c:a copy
+    ffmpeg_code += '" '+ffmpeg_audio_coding+' '+ffmpeg_extra_p2+''+ base_name + index + video_extension  #-c:a copy
     #end
     return(ffmpeg_code)
+
+def one_file_code():
+    print("go")
+    code_list = []
+
+    file_name = os.path.basename(os.path.normpath(path))
+    ffmpeg_code = '"'+current_absolute_script_path+'"'+ffmpeg_extra_p1+' -i ' + file_name + ' ' +ffmpeg_audio_coding+' '+ffmpeg_extra_p2+''+ file_name[:-4] + video_extension
+    code_list.append(str(ffmpeg_code))
+    return code_list
 
 def get_code_list():
     #dec
@@ -115,38 +135,50 @@ def get_code_list():
 
     #get folders content
     for file in os.listdir(path):
-        if file.endswith(".VOB"):
-            if "VIDEO_TS.VOB" not in file:
+        if file.endswith(".VOB") or file.endswith(".vob"):
+            if ("VIDEO_TS.VOB" or "VIDEO_TS.vob" or "video_ts.vob") not in file:
                 content_list.append(file)   #absolute path: os.path.join(path, file)
 
-    #get number of different video parts
-    for i in range(len(content_list)):
-        vid_parts_list.append(content_list[i][:-5])
-    vid_parts_list = sorted(set(vid_parts_list), key=vid_parts_list.index)
-    vid_parts_number = len(vid_parts_list)
+
+    try:
+        #get number of different video parts
+        for i in range(len(content_list)):
+            vid_parts_list.append(content_list[i][:-5])
+            int(content_list[i][4:-6])
+        non_standard = False
+    except:
+        print("No standard naming -> Merging to ONE file")
+        non_standard = True
 
     #get different codes
     code_list = []
+    if non_standard == True:
+        code_list.append(write_ffmpeg_code(None, content_list))
+    else:
+        vid_parts_list = sorted(set(vid_parts_list), key=vid_parts_list.index)
+        vid_parts_number = len(vid_parts_list)
 
-    for i in range(vid_parts_number):
-        part_list = [j for j in content_list if vid_parts_list[i] in j]
+        for i in range(vid_parts_number):
+            part_list = [j for j in content_list if vid_parts_list[i] in j]
 
-        code_list.append(write_ffmpeg_code(i, part_list))
+            code_list.append(write_ffmpeg_code(i, part_list))
 
     return(code_list)
 
 def start_process(code_list):
-    os.chdir(path)
+    if one_file == True:
+        os.chdir(os.path.dirname(path))
+    else: 
+        os.chdir(path)
 
     for i in range(len(code_list)):
         subprocess.call(code_list[i]) #, creationflags=subprocess.CREATE_NEW_CONSOLE
-        #'ffmpeg -i "concat:VTS_01_1.VOB|VTS_01_2.VOB|VTS_01_3.VOB" -c:v h264_nvenc -vf yadif=1 output.mp4'
 
     print('finished')
 
 #ffmpeg standard code
 #ffmpeg -i "concat:VTS_01_1.VOB|VTS_01_2.VOB|VTS_01_3.VOB" -c:v libx264 -vf yadif=1 new-video-h265.mp4 #software encoding
-#ffmpeg -i "concat:VTS_01_1.VOB|VTS_01_2.VOB|VTS_01_3.VOB" -c:v h264_nvenc -vf yadif=1 new-video-h265B.mp4  #nividia gpu encoding
+#ffmpeg -i "concat:VTS_01_1.VOB|VTS_01_2.VOB|VTS_01_3.VOB" -c:v h264_nvenc -vf yadif=1 new-video-h265B.mp4  #nvidia gpu encoding
 
 #start CORE
 #set terminal presets
@@ -163,7 +195,8 @@ except IOError:
     f.write(" -hwaccel cuda -hwaccel_device 0 -hwaccel_output_format cuda\n"+
             "-c:v h264_nvenc -vf yadif_cuda=1 \n"+
             ".mp4\n"+
-            "-c:a copy")
+            "-c:a copy\n"+
+            "multifileconverting")
 finally:
     f.close()
 
@@ -199,7 +232,10 @@ print("\n Using:",current_absolute_script_path,"\n\n Now starting converting")
 def starter():
     try:
         pathgetter()
-        code_list = get_code_list()
+        if one_file == False:
+            code_list = get_code_list()
+        elif one_file == True:
+            code_list = one_file_code()
         #if no VOB in folder ask again
         while(len(code_list) == 0):
             print("----------------------------\nERROR NO VOB FILES IN FOLDER \n----------------------------")
