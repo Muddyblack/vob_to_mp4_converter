@@ -7,6 +7,7 @@ This project helps converting your old DVD's into MP4 to preserve your treasures
 ATTENTION:
  - The preset is for computers with a nvidia graphics card
  - Use ```-options``` and then ```-disable nvidia``` if there is no supported graphics card
+ - ```-help``` will show all options
 
 To convert:
 - Just copy and paste the full path of the folder with the VOB files

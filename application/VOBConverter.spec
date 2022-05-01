@@ -4,7 +4,7 @@
 block_cipher = None
 
 
-a = Analysis(['F:\\Videos\\VOBConverter\\application\\..\\VOBConverter.py'],
+a = Analysis(['D:\\Chris\\Hobby\\Programmierprojekte\\Python\\VOB_to_MP4_converter\\application\\..\\VOBConverter.py'],
              pathex=[],
              binaries=[],
              datas=[],
@@ -37,4 +37,4 @@ exe = EXE(pyz,
           disable_windowed_traceback=False,
           target_arch=None,
           codesign_identity=None,
-          entitlements_file=None , icon='F:\\Videos\\VOBConverter\\VOBConverter.ico')
+          entitlements_file=None , icon='D:\\Chris\\Hobby\\Programmierprojekte\\Python\\VOB_to_MP4_converter\\VOBConverter.ico')
