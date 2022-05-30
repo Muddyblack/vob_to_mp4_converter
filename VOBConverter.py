@@ -58,7 +58,7 @@ def pathgetter():
             if(option == '-continue'):
                 starter()
             else :
-                print("  -----------------------------------------------------\n  no such command: " + option +"\n  Enter correct command or '-continue' to continue\n  -----------------------------------------------------")
+                print(f"  -----------------------------------------------------\n  no such command: {option}\n  Enter correct command or '-continue' to continue\n  -----------------------------------------------------")
                 option = str(input("  enter the option-command\n   >>"))
         if(option == suboptions_list[0]): #-disable_nvidia
             ffmpeg_extra_p1 = ''
@@ -83,7 +83,7 @@ def pathgetter():
             file_text_replace(options_log_path, [ffmpeg_audio_coding] , [4])
 
 
-        print("  -------------------------------------------------\n  changed: "+option+"\n  -------------------------------------------------")
+        print(f"  -------------------------------------------------\n  changed: {option}\n  -------------------------------------------------")
         starter()
     elif(path == command_list[1]): #-help
         helplist = ""
@@ -94,8 +94,8 @@ def pathgetter():
             helplist_suboptions += "   "+suboptions_list[i] + "\n"
 
 
-        print("------------\nMain commands\n------------\n" + helplist)
-        print("-----------------\ncommands for -options\n-----------------\n" + helplist_suboptions)
+        print(f"------------\nMain commands\n------------\n {helplist}")
+        print(f"-----------------\ncommands for -options\n-----------------\n {helplist_suboptions}")
         starter()
     elif(path == command_list[2]): #-exit
         sys.exit()
@@ -226,7 +226,7 @@ current_absolute_script_path = str(application_path).replace('\\', '\\\\') + "\\
 if(os.path.isfile(current_absolute_script_path)==False):
     current_absolute_script_path = str("ffmpeg")
 
-print("\n Using:",current_absolute_script_path,"\n\n Now starting converting")
+print(f"\n Using:{current_absolute_script_path}\n\n Now starting converting")
 
 #loop the script
 def starter():
