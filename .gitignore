@@ -8,6 +8,7 @@ __pypackages__/
 
 #extras
 dist/
+test/
 build/
 ffmpeg/
 *.exe

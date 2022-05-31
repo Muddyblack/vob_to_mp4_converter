@@ -89,9 +89,9 @@ def pathgetter():
         helplist = ""
         helplist_suboptions = ""
         for i in range(len(command_list)): 
-            helplist += "   "+command_list[i] + "\n"
+            helplist += f"   {command_list[i]} \n"
         for i in range(len(suboptions_list)): 
-            helplist_suboptions += "   "+suboptions_list[i] + "\n"
+            helplist_suboptions += f"   {suboptions_list[i]} \n"
 
 
         print(f"------------\nMain commands\n------------\n {helplist}")
@@ -108,14 +108,14 @@ def write_ffmpeg_code(index, content_list):
         index = "_part_" + str(index+1)
 
     #put the ffmpeg code together
-    ffmpeg_code = '"'+current_absolute_script_path+'"'+ffmpeg_extra_p1+' -i "concat:'  #
+    ffmpeg_code = f'"{current_absolute_script_path}"{ffmpeg_extra_p1} -i "concat:'  #
     for i in range(len(content_list)):
-       ffmpeg_code += content_list[i] + "|"
+       ffmpeg_code += f"{content_list[i]}|"
        if i == len(content_list)-1:
            ffmpeg_code = ffmpeg_code[:-1]
     
     base_name = os.path.basename(os.path.normpath(path)).replace(" ", "_")
-    ffmpeg_code += '" '+ffmpeg_audio_coding+' '+ffmpeg_extra_p2+''+ base_name + index + video_extension  #-c:a copy
+    ffmpeg_code += f'" {ffmpeg_audio_coding} {ffmpeg_extra_p2} {base_name}{index}{video_extension}'  #-c:a copy 
     #end
     return(ffmpeg_code)
 
@@ -124,7 +124,7 @@ def one_file_code():
     code_list = []
 
     file_name = os.path.basename(os.path.normpath(path))
-    ffmpeg_code = '"'+current_absolute_script_path+'"'+ffmpeg_extra_p1+' -i ' + file_name + ' ' +ffmpeg_audio_coding+' '+ffmpeg_extra_p2+''+ file_name[:-4] + video_extension
+    ffmpeg_code = f'"{current_absolute_script_path}"{ffmpeg_extra_p1} -i {file_name} {ffmpeg_audio_coding} {ffmpeg_extra_p2}{file_name[:-4]}{video_extension}'
     code_list.append(str(ffmpeg_code))
     return code_list
 
