@@ -12,7 +12,7 @@ ATTENTION:
 To convert:
 - Just copy and paste the full path of the folder with the VOB files
 - If the VOB Files have standard-names it will seperate them in their different parts
-- If not will it creates ```ONE``` big MP4 file of all VOB files in that folder
+- If not will it create ```ONE``` big MP4 file of all VOB files in that folder
 - If you want to convert just one file enter the full path of that file
 
 Save some informations:
