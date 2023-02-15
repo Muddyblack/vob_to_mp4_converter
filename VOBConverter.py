@@ -1,34 +1,38 @@
-import subprocess, sys, os
+import os, sys
+import subprocess
 
-#replace text in file
-# how to use : file_text_replace(path_of_file, [stringtext], [inline_as_integer_number])
-def file_text_replace(file, change_input, line):
-    change_input_length = len(change_input)
-    input_pointer = 0
+
+def read_file(file_path):
+    with open(file_path, "r") as f:
+        txt_lines = f.readlines()
+
+        for r in range(len(txt_lines)):
+            txt_lines[r]= txt_lines[r].replace('\n','')
+
+    return txt_lines
+
+# how to use : file_text_replacer(path_of_file, [stringtext], [inline_as_integer_number])
+def file_line_replacer(file, change_input, line):
     
+    data = read_file(file)
 
-    with open(file, 'r',encoding="utf8") as file_to_replace:  #sys.argv[0]
-        data = file_to_replace.readlines()
-    while input_pointer < change_input_length:
-        line[input_pointer] = line[input_pointer] - 1
-        data[line[input_pointer]] = change_input[input_pointer]+'\n'
-        input_pointer += 1
+    for pointing,x in enumerate(change_input):
+        try:
+            data[line[pointing]-1] = change_input[pointing]
+        except:
+            data.append("")
 
-    with open(file, 'w',encoding="utf8") as file_to_replace:
-        file_to_replace.writelines(data)
 
-def read_log(log_path):
-    f = open(log_path, "r")
+    with open(file, 'w', encoding="utf8") as file_to_replace:
+        data_len = len(data)
 
-    log_lines = f.readlines()
-    log_lines_length = len(log_lines)
-    r = 0 
-    while r < log_lines_length:
-        log_lines[r]= log_lines[r].replace('\n','')
-        r+=1
-    f.close()
-
-    return(log_lines)
+        for x in data:
+            if data_len > 1:
+                file_to_replace.writelines(f"{x}\n")
+            else:
+                file_to_replace.writelines(f"{x}")
+            
+            data_len-=1
 
 # ask user for the path where to convert the Videos
 def pathgetter():
@@ -63,24 +67,24 @@ def pathgetter():
         if(option == suboptions_list[0]): #-disable_nvidia
             ffmpeg_extra_p1 = ''
             ffmpeg_extra_p2 = '-c:v libx264 -vf yadif=1 '
-            file_text_replace(options_log_path, [ffmpeg_extra_p1,ffmpeg_extra_p2] , [1,2])
+            file_line_replacer(options_log_path, [ffmpeg_extra_p1,ffmpeg_extra_p2] , [1,2])
 
         elif(option == suboptions_list[1]): #-enable_nvidia
             ffmpeg_extra_p1 = ' -hwaccel cuda -hwaccel_device 0 -hwaccel_output_format cuda'
             ffmpeg_extra_p2 = '-c:v h264_nvenc -vf yadif_cuda=1 '
-            file_text_replace(options_log_path, [ffmpeg_extra_p1,ffmpeg_extra_p2] , [1,2])
+            file_line_replacer(options_log_path, [ffmpeg_extra_p1,ffmpeg_extra_p2] , [1,2])
         
         elif(option == suboptions_list[2]): #set-v-format
             video_extension = str(input(" Enter the desired format:\n NOT YET FINISHED OPTION\n  >>"))
-            file_text_replace(options_log_path, [video_extension] , [3])
+            file_line_replacer(options_log_path, [video_extension] , [3])
         
         elif(option == suboptions_list[3]): #-copy_audio
             ffmpeg_audio_coding = '-c:a copy'
-            file_text_replace(options_log_path, [ffmpeg_audio_coding] , [4])
+            file_line_replacer(options_log_path, [ffmpeg_audio_coding] , [4])
         
         elif(option == suboptions_list[4]): #-encode_audio
             ffmpeg_audio_coding = '-c:a aac'
-            file_text_replace(options_log_path, [ffmpeg_audio_coding] , [4])
+            file_line_replacer(options_log_path, [ffmpeg_audio_coding] , [4])
 
 
         print(f"  -------------------------------------------------\n  changed: {option}\n  -------------------------------------------------")
@@ -115,7 +119,7 @@ def write_ffmpeg_code(index, content_list):
            ffmpeg_code = ffmpeg_code[:-1]
     
     base_name = os.path.basename(os.path.normpath(path)).replace(" ", "_")
-    ffmpeg_code += f'" {ffmpeg_audio_coding} {ffmpeg_extra_p2} {base_name}{index}{video_extension}'  #-c:a copy 
+    ffmpeg_code += f'" {ffmpeg_audio_coding} {ffmpeg_extra_p2} {base_name}{index}{video_extension}'
     #end
     return(ffmpeg_code)
 
@@ -126,6 +130,7 @@ def one_file_code():
     file_name = os.path.basename(os.path.normpath(path))
     ffmpeg_code = f'"{current_absolute_script_path}"{ffmpeg_extra_p1} -i {file_name} {ffmpeg_audio_coding} {ffmpeg_extra_p2}{file_name[:-4]}{video_extension}'
     code_list.append(str(ffmpeg_code))
+    
     return code_list
 
 def get_code_list():
@@ -152,6 +157,7 @@ def get_code_list():
 
     #get different codes
     code_list = []
+
     if non_standard == True:
         code_list.append(write_ffmpeg_code(None, content_list))
     else:
@@ -176,15 +182,11 @@ def start_process(code_list):
 
     print('finished')
 
-#ffmpeg standard code
-#ffmpeg -i "concat:VTS_01_1.VOB|VTS_01_2.VOB|VTS_01_3.VOB" -c:v libx264 -vf yadif=1 new-video-h265.mp4 #software encoding
-#ffmpeg -i "concat:VTS_01_1.VOB|VTS_01_2.VOB|VTS_01_3.VOB" -c:v h264_nvenc -vf yadif=1 new-video-h265B.mp4  #nvidia gpu encoding
-
 #start CORE
 #set terminal presets
 os.system('color 9') 
 #standard vars && create standard log if not existing
-options_log_path = ".\\options.log"
+options_log_path = os.path.dirname(os.path.abspath(__file__)) + "\\options.log"
 
 try:
     f = open(options_log_path)
@@ -200,18 +202,11 @@ except IOError:
 finally:
     f.close()
 
-log_list = read_log(options_log_path)
+log_list = read_file(options_log_path)
 ffmpeg_extra_p1 = log_list[0]
 ffmpeg_extra_p2 = log_list[1]
 video_extension = log_list[2]
 ffmpeg_audio_coding = log_list[3]
-#logsave
-"""
- -hwaccel cuda -hwaccel_device 0 -hwaccel_output_format cuda
--c:v h264_nvenc -vf yadif_cuda=1 
-.mp4
--c:a copy
-"""
 
 print(log_list)
 #get absolute path of .exe or .py
@@ -236,6 +231,7 @@ def starter():
             code_list = get_code_list()
         elif one_file == True:
             code_list = one_file_code()
+        
         #if no VOB in folder ask again
         while(len(code_list) == 0):
             print("----------------------------\nERROR NO VOB FILES IN FOLDER \n----------------------------")
@@ -250,4 +246,6 @@ def starter():
         print("\nClose the window and fix the code!\n--------------------------------------------------------------------------------------------\n")
         starter()
 
-starter()
+
+if __name__ == "__main__":
+    starter()
