@@ -2,30 +2,31 @@
 
 This project helps converting your old DVD's into MP4 to preserve your treasures.
 
-## Usage:
+## Usage
 
-ATTENTION:
- - The preset is for computers with a nvidia graphic-card
- - Use ```-options``` and then ```-disable nvidia``` if there is no supported graphic-card
- - ```-help``` will show all options
+### Simple Usage
+1. Run the script (or the executable):
+   ```bash
+   python vob_converter.py
+   ```
+2. **Drag and drop** your file or folder into the window when prompted.
+   - Separate VOB files will be converted individually.
+   - DVD segments (e.g., `VTS_01_1.VOB`, `VTS_01_2.VOB`) will be automatically merged.
 
-To convert:
-- Just copy and paste the full path of the folder with the VOB files
-- If the VOB Files have standard-names it will seperate them in their different parts
-- If not will it create ```ONE``` big MP4 file of all VOB files in that folder
-- If you want to convert just one file enter the full path of that file
-
-Save some informations:
-```python
-#logsave
-"""
- -hwaccel cuda -hwaccel_device 0 -hwaccel_output_format cuda
--c:v h264_nvenc -vf yadif_cuda=1 
-.mp4
--c:a copy
-"""
-
-#ffmpeg standard code
-#ffmpeg -i "concat:VTS_01_1.VOB|VTS_01_2.VOB|VTS_01_3.VOB" -c:v libx264 -vf yadif=1 new-video-h265.mp4 #software encoding
-#ffmpeg -i "concat:VTS_01_1.VOB|VTS_01_2.VOB|VTS_01_3.VOB" -c:v h264_nvenc -vf yadif=1 new-video-h265B.mp4  #nvidia gpu encoding
+### Advanced (Command Line)
+You can passing arguments directly for automation:
+```bash
+python vob_converter.py "C:\Movies\DVD_Rip" --nvidia
 ```
+*   `--nvidia`: Use GPU acceleration (faster).
+*   `--cpu`: Force CPU encoding (better compatibility).
+
+### Features
+*   **Auto-Setup**: Automatically downloads the correct FFmpeg (Windows/Linux/MacOS) if missing (~100MB).
+*   **Smart Merging**: Auto-detects and joins DVD chapters.
+*   **Settings**: Remembers your GPU preference in `settings.json`.
+
+### Requirements
+*   Python 3.x (if running from source)
+*   *Or* just the standalone executable.
+*   Internet connection (only for the first run to download FFmpeg).
